@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowLeftIcon, CreditCardIcon } from '@heroicons/react/24/solid';
 import CartItem from '@/app/components/CartItem';
 import { GLASS_STYLES } from '../constants';
+import Button from '../components/Button';
 
 export default function CartPage() {
   // Mock cart items
@@ -28,24 +29,28 @@ export default function CartPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
-      
+
       {/* Header with Navigation Back */}
       <div className="flex items-center justify-between px-1">
         <div className="space-y-1">
           <h1 className="text-3xl font-black tracking-tight text-neutral-900">Your Shopping Bag</h1>
           <p className="text-xs text-neutral-400 font-medium uppercase tracking-widest">3 items in your selection</p>
         </div>
-        <Link 
-          href="/" 
+        {/* <Link
+          href="/"
           className="hidden sm:inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/30 px-4 py-2 text-sm font-medium text-neutral-700 backdrop-blur-md transition-all hover:bg-white/60"
         >
           <ArrowLeftIcon className="h-4 w-4" />
           <span>Continue Shopping</span>
-        </Link>
+        </Link> */}
+        <Button variant="secondary">
+          <ArrowLeftIcon className="h-4 w-4" />
+          <span>Continue Shopping</span>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
+
         {/* Left Side: Wide Glassy List */}
         <div className="lg:col-span-8 flex flex-col gap-4">
           {cartItems.map((item) => (
@@ -57,7 +62,7 @@ export default function CartPage() {
         <aside className="lg:col-span-4 sticky top-28">
           <div className={`p-6 space-y-6 ${GLASS_STYLES.container}`}>
             <h2 className="text-xl font-bold text-neutral-800 tracking-tight">Order Summary</h2>
-            
+
             <div className="space-y-3">
               <div className="flex justify-between text-sm font-medium text-neutral-500">
                 <span>Subtotal</span>
@@ -79,10 +84,10 @@ export default function CartPage() {
             </div>
 
             {/* Glassy Checkout Button */}
-            <button className="w-full flex items-center justify-center gap-3 rounded-full bg-neutral-950 py-4 text-sm font-bold text-white shadow-xl shadow-black/10 hover:bg-neutral-800 hover:scale-[1.02] active:scale-95 transition-all duration-300">
+            <Button width="full" variant="primary">
               <CreditCardIcon className="h-5 w-5" />
               <span>Proceed to Checkout</span>
-            </button>
+            </Button>
 
             {/* Payment Method Icons */}
             <div className="flex justify-center items-center gap-4 opacity-30 grayscale pointer-events-none">
