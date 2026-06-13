@@ -6,6 +6,7 @@ import {
   MagnifyingGlassIcon,
   ShoppingBagIcon,
 } from '@heroicons/react/24/outline';
+import { GLASS_STYLES } from '../constants';
 
 interface NavbarProps {
   cartItems?: number;
@@ -54,7 +55,7 @@ export default function Navbar({
   };
 
   return (
-    <nav className="sticky top-4 z-50 mx-4 rounded-full border border-white/40 bg-white/30 px-6 py-3.5 shadow-lg backdrop-blur-xl ring-1 ring-black/[0.03]">
+    <nav className={`sticky top-4 z-50 mx-4 px-6 py-3.5 ${GLASS_STYLES.container}`}>
       <div className="mx-auto max-w-7xl">
         <div className="flex items-center justify-between gap-8">
 

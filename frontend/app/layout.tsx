@@ -42,7 +42,7 @@ export default function RootLayout({
 
         {/* --- INTERFACE LAYERS --- */}
         <Navbar cartItems={0} isLoggedIn={false} />
-        <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-4 md:p-8">
+        <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 py-6 md:py-8">
           {children}
         </main>
       </body>
