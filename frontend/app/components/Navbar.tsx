@@ -132,7 +132,7 @@ export default function Navbar({
                 </button>
               ) : (
                 <Link
-                  href="/login"
+                  href="/signin"
                   className="rounded-full bg-neutral-900 px-5 py-2 text-sm font-medium text-white shadow transition-colors hover:bg-neutral-800"
                 >
                   Sign In
