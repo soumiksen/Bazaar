@@ -1,29 +1,20 @@
 'use client';
 
 import { StarIcon } from '@heroicons/react/24/solid';
-
-interface ReviewItem {
-  id: number;
-  name: string;
-  rating: number;
-  date: string;
-  comment: string;
-  avatar: string;
-}
+import type { Review } from '../types';
 
 interface ReviewCardProps {
-  review: ReviewItem;
+  review: Review;
 }
 
 export default function ReviewCard({ review }: ReviewCardProps) {
   return (
     <div className="p-5 flex flex-col justify-between space-y-3 rounded-2xl border border-neutral-100 bg-white shadow-sm transition-all duration-300 hover:shadow-md animate-in fade-in slide-in-from-top-2 duration-300">
-      {/* Header Profile Info Block */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <img 
-            src={review.avatar} 
-            alt={review.name} 
+          <img
+            src={review.avatar}
+            alt={`${review.name}'s avatar`}
             className="h-9 w-9 rounded-full object-cover border border-neutral-100 shadow-sm"
           />
           <div>
@@ -32,17 +23,18 @@ export default function ReviewCard({ review }: ReviewCardProps) {
           </div>
         </div>
 
-        {/* Score badge rendering dynamically based on score */}
-        <div className="flex items-center gap-0.5 rounded-full bg-neutral-50 border border-neutral-100 px-2 py-0.5">
+        <div
+          className="flex items-center gap-0.5 rounded-full bg-neutral-50 border border-neutral-100 px-2 py-0.5"
+          aria-label={`Rating: ${review.rating} out of 5 stars`}
+        >
           {Array.from({ length: review.rating }).map((_, index) => (
             <StarIcon key={index} className="h-3 w-3 text-amber-400" />
           ))}
         </div>
       </div>
 
-      {/* Comment text body */}
       <p className="text-sm leading-relaxed text-neutral-600 font-normal pl-1">
-        "{review.comment}"
+        &ldquo;{review.comment}&rdquo;
       </p>
     </div>
   );
