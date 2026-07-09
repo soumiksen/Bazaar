@@ -1,20 +1,43 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { SubmitEvent, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Button, { buttonVariants } from '@/app/components/Button';
 import AuthCard from '@/app/components/AuthCard';
 import FormField from '@/app/components/FormField';
+import { ApiError, signup } from '@/app/lib/api';
+import { useAuthStore } from '@/app/store/authStore';
+import { useRequireGuest } from '@/app/hooks/useRequireGuest';
+import { ERROR_BANNER_STYLES } from '@/app/constants';
 
 export default function SignUpPage() {
+  const router = useRouter();
+  const setSession = useAuthStore((state) => state.setSession);
+  const isCheckingGuest = useRequireGuest();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log({ name, email, password });
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const auth = await signup({ name, email, password, role: 'CUSTOMER' });
+      setSession(auth);
+      router.push('/');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isCheckingGuest) return null;
 
   return (
     <AuthCard
@@ -30,6 +53,8 @@ export default function SignUpPage() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {error && <div className={ERROR_BANNER_STYLES}>{error}</div>}
+
         <FormField
           id="name"
           label="Full Name"
@@ -60,8 +85,8 @@ export default function SignUpPage() {
         />
 
         <div className="pt-2">
-          <Button type="submit" variant="primary" width="full">
-            Create Account
+          <Button type="submit" variant="primary" width="full" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating account...' : 'Create Account'}
           </Button>
         </div>
       </form>

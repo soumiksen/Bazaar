@@ -1,19 +1,42 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { SubmitEvent, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Button, { buttonVariants } from '@/app/components/Button';
 import AuthCard from '@/app/components/AuthCard';
 import FormField from '@/app/components/FormField';
+import { ApiError, signin } from '@/app/lib/api';
+import { useAuthStore } from '@/app/store/authStore';
+import { useRequireGuest } from '@/app/hooks/useRequireGuest';
+import { ERROR_BANNER_STYLES } from '@/app/constants';
 
 export default function SignInPage() {
+  const router = useRouter();
+  const setSession = useAuthStore((state) => state.setSession);
+  const isCheckingGuest = useRequireGuest();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log({ email, password });
+    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const auth = await signin({ email, password });
+      setSession(auth);
+      router.push('/');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  if (isCheckingGuest) return null;
 
   return (
     <AuthCard
@@ -29,6 +52,8 @@ export default function SignInPage() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {error && <div className={ERROR_BANNER_STYLES}>{error}</div>}
+
         <FormField
           id="email"
           label="Email Address"
@@ -55,8 +80,8 @@ export default function SignInPage() {
         />
 
         <div className="pt-2">
-          <Button type="submit" variant="primary" width="full">
-            Sign In
+          <Button type="submit" variant="primary" width="full" disabled={isSubmitting}>
+            {isSubmitting ? 'Signing in...' : 'Sign In'}
           </Button>
         </div>
       </form>

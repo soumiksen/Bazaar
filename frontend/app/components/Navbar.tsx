@@ -1,30 +1,28 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
   MagnifyingGlassIcon,
   ShoppingBagIcon,
 } from '@heroicons/react/24/outline';
 import { GLASS_STYLES } from '../constants';
+import { logout as logoutRequest } from '@/app/lib/api';
+import { useAuthStore, selectIsAuthenticated } from '@/app/store/authStore';
 
 interface NavbarProps {
   cartItems?: number;
   onSearch?: (query: string) => void;
-  isLoggedIn?: boolean;
-  userName?: string;
-  userAvatarUrl?: string;
-  onLogout?: () => void;
 }
 
-export default function Navbar({
-  cartItems = 0,
-  onSearch,
-  isLoggedIn = true,
-  userName = 'Soumik Sen',
-  userAvatarUrl = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-  onLogout,
-}: NavbarProps) {
+export default function Navbar({ cartItems = 0, onSearch }: NavbarProps) {
+  const router = useRouter();
+  const user = useAuthStore((state) => state.user);
+  const refreshToken = useAuthStore((state) => state.refreshToken);
+  const clearSession = useAuthStore((state) => state.clearSession);
+  const isLoggedIn = useAuthStore(selectIsAuthenticated);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfile, setShowProfile] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -51,7 +49,12 @@ export default function Navbar({
 
   const handleLogout = () => {
     setShowProfile(false);
-    onLogout?.();
+    const tokenToRevoke = refreshToken;
+    clearSession();
+    if (tokenToRevoke) {
+      logoutRequest(tokenToRevoke).catch(() => {});
+    }
+    router.push('/');
   };
 
   return (
@@ -112,7 +115,7 @@ export default function Navbar({
 
             {/* Profile Dropdown / User Badge */}
             <div className="relative" ref={profileRef}>
-              {isLoggedIn ? (
+              {isLoggedIn && user ? (
                 <button
                   onClick={() => setShowProfile((prev) => !prev)}
                   aria-haspopup="true"
@@ -120,14 +123,10 @@ export default function Navbar({
                   className="flex items-center gap-3 rounded-full border border-white/40 bg-white/40 p-1 pl-4 shadow-sm backdrop-blur-sm outline-none transition-colors hover:bg-white/60 cursor-pointer"
                 >
                   <span className="text-sm font-medium text-neutral-700">
-                    {userName}
+                    {user.name}
                   </span>
-                  <div className="h-8 w-8 overflow-hidden rounded-full bg-neutral-200 border border-white/40 shadow-sm">
-                    <img
-                      src={userAvatarUrl}
-                      alt={`${userName}'s avatar`}
-                      className="h-full w-full object-cover"
-                    />
+                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-neutral-900 border border-white/40 shadow-sm text-white text-xs font-bold uppercase">
+                    {user.name.charAt(0)}
                   </div>
                 </button>
               ) : (
@@ -140,7 +139,7 @@ export default function Navbar({
               )}
 
               {/* Profile Dropdown Menu */}
-              {showProfile && isLoggedIn && (
+              {showProfile && isLoggedIn && user && (
                 <div
                   role="menu"
                   className="absolute right-0 mt-3 w-48 rounded-2xl border border-white/40 bg-white p-2 shadow-xl backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150"

@@ -8,3 +8,6 @@ export const INPUT_STYLES =
 
 export const LABEL_STYLES =
   "text-[10px] font-bold uppercase tracking-wider text-neutral-400 block pl-1";
+
+export const ERROR_BANNER_STYLES =
+  "rounded-2xl border border-red-200 bg-red-50/70 px-4 py-2.5 text-xs font-medium text-red-600 backdrop-blur-sm";
