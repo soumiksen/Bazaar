@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { AuthResponse, UserSummary } from '@/app/lib/api';
+import type { AuthResponse, UserSummary } from '@/app/lib/api';
 
 interface AuthState {
   user: UserSummary | null;

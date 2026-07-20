@@ -7,13 +7,12 @@ export interface Review {
   avatar: string;
 }
 
-export interface Product {
+export interface CatalogProduct {
   id: string;
   title: string;
   category: string;
-  price: string;
-  rating: number;
-  imageUrl: string;
+  price: number;
+  imageUrl: string | null;
 }
 
 export interface CartItemData {
@@ -25,13 +24,27 @@ export interface CartItemData {
   quantity: number;
 }
 
+export type VendorProductStatus = 'ACTIVE' | 'DRAFT';
+
 export interface VendorProduct {
   id: string;
   title: string;
   category: string;
-  price: string;
+  price: number;
   stock: number;
-  status: 'active' | 'draft';
+  status: VendorProductStatus;
+  imageUrl: string | null;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VendorProductInput {
+  title: string;
+  category: string;
+  price: number;
+  stock: number;
+  status: VendorProductStatus;
   imageUrl: string;
   description: string;
 }
