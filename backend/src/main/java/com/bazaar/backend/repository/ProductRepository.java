@@ -15,4 +15,6 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     Optional<Product> findByIdAndVendorId(UUID id, UUID vendorId);
 
     List<Product> findAllByStatusOrderByCreatedAtDesc(ProductStatus status);
+
+    Optional<Product> findByIdAndStatus(UUID id, ProductStatus status);
 }

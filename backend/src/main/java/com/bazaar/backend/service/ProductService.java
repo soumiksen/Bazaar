@@ -1,6 +1,7 @@
 package com.bazaar.backend.service;
 
 import com.bazaar.backend.dto.product.CatalogProductResponse;
+import com.bazaar.backend.dto.product.ProductDetailResponse;
 import com.bazaar.backend.dto.product.ProductRequest;
 import com.bazaar.backend.dto.product.ProductResponse;
 import com.bazaar.backend.entity.Product;
@@ -37,6 +38,13 @@ public class ProductService {
         return productRepository.findAllByStatusOrderByCreatedAtDesc(ProductStatus.ACTIVE).stream()
                 .map(CatalogProductResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ProductDetailResponse getActiveById(UUID productId) {
+        Product product = productRepository.findByIdAndStatus(productId, ProductStatus.ACTIVE)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found"));
+        return ProductDetailResponse.from(product);
     }
 
     @Transactional(readOnly = true)

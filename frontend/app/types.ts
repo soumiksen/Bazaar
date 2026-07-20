@@ -15,6 +15,18 @@ export interface CatalogProduct {
   imageUrl: string | null;
 }
 
+export interface ProductDetail {
+  id: string;
+  title: string;
+  category: string;
+  price: number;
+  stock: number;
+  imageUrl: string | null;
+  description: string | null;
+  vendorName: string;
+  createdAt: string;
+}
+
 export interface CartItemData {
   id: string;
   title: string;

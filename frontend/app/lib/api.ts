@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/app/store/authStore';
-import type { CatalogProduct, VendorProduct, VendorProductInput } from '@/app/types';
+import type { CatalogProduct, ProductDetail, VendorProduct, VendorProductInput } from '@/app/types';
 
 export type Role = 'CUSTOMER' | 'VENDOR' | 'ADMIN';
 
@@ -104,6 +104,18 @@ export async function listCatalogProducts(): Promise<CatalogProduct[]> {
   }
 
   return parseResponse<CatalogProduct[]>(response);
+}
+
+export async function getProduct(id: string): Promise<ProductDetail> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/api/products/${id}`);
+  } catch {
+    throw new ApiError('Could not reach the server. Please try again.', 0);
+  }
+
+  return parseResponse<ProductDetail>(response);
 }
 
 /**
