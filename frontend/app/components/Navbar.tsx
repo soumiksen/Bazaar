@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
+  HeartIcon,
   MagnifyingGlassIcon,
   ShoppingBagIcon,
 } from '@heroicons/react/24/outline';
@@ -11,6 +12,7 @@ import { GLASS_STYLES } from '../constants';
 import { logout as logoutRequest, suggestProducts } from '@/app/lib/api';
 import { useAuthStore, selectIsAuthenticated } from '@/app/store/authStore';
 import { useCartStore } from '@/app/store/cartStore';
+import { useLikeStore } from '@/app/store/likeStore';
 import type { CatalogProduct } from '@/app/types';
 
 const SUGGESTION_DEBOUNCE_MS = 200;
@@ -26,6 +28,7 @@ export default function Navbar({ onSearch }: NavbarProps) {
   const clearSession = useAuthStore((state) => state.clearSession);
   const isLoggedIn = useAuthStore(selectIsAuthenticated);
   const cartItems = useCartStore((state) => state.totalQuantity);
+  const likedItems = useLikeStore((state) => state.totalCount);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<CatalogProduct[]>([]);
@@ -181,6 +184,20 @@ export default function Navbar({ onSearch }: NavbarProps) {
 
           {/* Right Side Actions Section */}
           <div className="flex items-center gap-3">
+
+            {/* Wishlist Button */}
+            <Link
+              href="/likes"
+              aria-label={`Wishlist, ${likedItems} item${likedItems === 1 ? '' : 's'}`}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/40 bg-white/40 text-neutral-700 shadow-sm backdrop-blur-sm transition-colors hover:bg-white/60"
+            >
+              <HeartIcon className="h-5 w-5" />
+              {likedItems > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white/50">
+                  {likedItems}
+                </span>
+              )}
+            </Link>
 
             {/* Shopping Cart Button */}
             <Link

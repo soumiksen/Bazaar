@@ -1,5 +1,12 @@
 import { useAuthStore } from '@/app/store/authStore';
-import type { CartSummary, CatalogProduct, ProductDetail, VendorProduct, VendorProductInput } from '@/app/types';
+import type {
+  CartSummary,
+  CatalogProduct,
+  LikesSummary,
+  ProductDetail,
+  VendorProduct,
+  VendorProductInput,
+} from '@/app/types';
 
 export type Role = 'CUSTOMER' | 'VENDOR' | 'ADMIN';
 
@@ -225,4 +232,19 @@ export function updateCartItemQuantity(cartItemId: string, quantity: number): Pr
 
 export function removeCartItem(cartItemId: string): Promise<CartSummary> {
   return authorizedRequest<CartSummary>(`/api/cart/items/${cartItemId}`, { method: 'DELETE' });
+}
+
+export function getLikes(): Promise<LikesSummary> {
+  return authorizedRequest<LikesSummary>('/api/likes');
+}
+
+export function likeProduct(productId: string): Promise<LikesSummary> {
+  return authorizedRequest<LikesSummary>('/api/likes', {
+    method: 'POST',
+    body: JSON.stringify({ productId }),
+  });
+}
+
+export function unlikeProduct(productId: string): Promise<LikesSummary> {
+  return authorizedRequest<LikesSummary>(`/api/likes/${productId}`, { method: 'DELETE' });
 }

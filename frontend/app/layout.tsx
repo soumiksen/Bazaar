@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "./components/Navbar";
 import AuthHydrator from "./components/AuthHydrator";
 import CartHydrator from "./components/CartHydrator";
+import LikeHydrator from "./components/LikeHydrator";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -45,6 +46,7 @@ export default function RootLayout({
         {/* --- INTERFACE LAYERS --- */}
         <AuthHydrator />
         <CartHydrator />
+        <LikeHydrator />
         <Navbar />
         <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 py-6 md:py-8">
           {children}

@@ -44,6 +44,21 @@ export interface CartSummary {
   subtotal: number;
 }
 
+export interface LikedProduct {
+  id: string;
+  productId: string;
+  title: string;
+  category: string;
+  price: number;
+  imageUrl: string | null;
+  stock: number;
+}
+
+export interface LikesSummary {
+  items: LikedProduct[];
+  totalCount: number;
+}
+
 export type VendorProductStatus = 'ACTIVE' | 'DRAFT';
 
 export interface VendorProduct {

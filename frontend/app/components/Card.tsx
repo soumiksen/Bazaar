@@ -2,9 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ShoppingBagIcon, StarIcon } from '@heroicons/react/24/solid';
 import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline';
 import { GLASS_STYLES } from '../constants';
+import { likeProduct, unlikeProduct } from '@/app/lib/api';
+import { useAuthStore, selectIsAuthenticated } from '@/app/store/authStore';
+import { useLikeStore } from '@/app/store/likeStore';
 
 interface ProductCardProps {
   id: string;
@@ -25,8 +29,34 @@ export default function ProductCard({
   imageUrl = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80',
   onAddToCart,
 }: ProductCardProps) {
-  const [isFavorite, setIsFavorite] = useState(false);
+  const router = useRouter();
+  const isLoggedIn = useAuthStore(selectIsAuthenticated);
+  const isFavorite = useLikeStore((state) => state.likedProductIds.has(id));
+  const setLikes = useLikeStore((state) => state.setLikes);
+  const [isTogglingLike, setIsTogglingLike] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+
+  const handleToggleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!isLoggedIn) {
+      router.push('/signin');
+      return;
+    }
+
+    if (isTogglingLike) return;
+    setIsTogglingLike(true);
+
+    try {
+      const likes = isFavorite ? await unlikeProduct(id) : await likeProduct(id);
+      setLikes(likes);
+    } catch {
+      // silently ignore; the heart simply won't reflect the toggle
+    } finally {
+      setIsTogglingLike(false);
+    }
+  };
 
   return (
     <Link href={`/products/${id}`} className="block" aria-label={`View ${title} details`}>
@@ -49,10 +79,11 @@ export default function ProductCard({
 
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); setIsFavorite((prev) => !prev); }}
+            onClick={handleToggleLike}
+            disabled={isTogglingLike}
             aria-label={isFavorite ? 'Remove from wishlist' : 'Add to wishlist'}
             aria-pressed={isFavorite}
-            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/50 bg-white/30 text-neutral-700 shadow-sm backdrop-blur-md transition-all duration-300 hover:bg-white/80 cursor-pointer active:scale-90"
+            className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/50 bg-white/30 text-neutral-700 shadow-sm backdrop-blur-md transition-all duration-300 hover:bg-white/80 cursor-pointer active:scale-90 disabled:opacity-60"
           >
             <HeartOutline
               className={`h-4 w-4 transition-all duration-300 ${

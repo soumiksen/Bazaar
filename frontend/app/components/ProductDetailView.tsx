@@ -9,7 +9,8 @@ import { GLASS_STYLES } from '@/app/constants';
 import ReviewCard from '@/app/components/ReviewCard';
 import { useAuthStore, selectIsAuthenticated } from '@/app/store/authStore';
 import { useCartStore } from '@/app/store/cartStore';
-import { addCartItem, ApiError } from '@/app/lib/api';
+import { useLikeStore } from '@/app/store/likeStore';
+import { addCartItem, likeProduct, unlikeProduct, ApiError } from '@/app/lib/api';
 import type { ProductDetail, Review } from '@/app/types';
 
 const FALLBACK_IMAGE_URL =
@@ -52,7 +53,8 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
   const router = useRouter();
   const isLoggedIn = useAuthStore(selectIsAuthenticated);
   const setCart = useCartStore((state) => state.setCart);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const isFavorite = useLikeStore((state) => state.likedProductIds.has(product.id));
+  const setLikes = useLikeStore((state) => state.setLikes);
   const [selectedColor, setSelectedColor] = useState(COLOR_SWATCHES[0].id);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [reviews, setReviews] = useState<Review[]>(INITIAL_REVIEWS);
@@ -61,6 +63,7 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
+  const [isTogglingLike, setIsTogglingLike] = useState(false);
 
   const handleAddToCart = async () => {
     if (!isLoggedIn) {
@@ -80,6 +83,25 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
       setCartError(error instanceof ApiError ? error.message : 'Could not add to cart. Please try again.');
     } finally {
       setIsAddingToCart(false);
+    }
+  };
+
+  const handleToggleLike = async () => {
+    if (!isLoggedIn) {
+      router.push('/signin');
+      return;
+    }
+
+    if (isTogglingLike) return;
+    setIsTogglingLike(true);
+
+    try {
+      const likes = isFavorite ? await unlikeProduct(product.id) : await likeProduct(product.id);
+      setLikes(likes);
+    } catch {
+      // silently ignore; the heart simply won't reflect the toggle
+    } finally {
+      setIsTogglingLike(false);
     }
   };
 
@@ -138,10 +160,11 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
 
           <button
             type="button"
-            onClick={() => setIsFavorite((prev) => !prev)}
+            onClick={handleToggleLike}
+            disabled={isTogglingLike}
             aria-label={isFavorite ? 'Remove from wishlist' : 'Add to wishlist'}
             aria-pressed={isFavorite}
-            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/30 text-neutral-700 shadow-sm backdrop-blur-md transition-all hover:bg-white/80 active:scale-90 cursor-pointer"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/50 bg-white/30 text-neutral-700 shadow-sm backdrop-blur-md transition-all hover:bg-white/80 active:scale-90 cursor-pointer disabled:opacity-60"
           >
             <HeartOutline
               className={`h-5 w-5 transition-transform duration-300 ${
