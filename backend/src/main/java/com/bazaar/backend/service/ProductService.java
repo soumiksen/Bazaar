@@ -9,6 +9,7 @@ import com.bazaar.backend.entity.ProductStatus;
 import com.bazaar.backend.exception.ProductNotFoundException;
 import com.bazaar.backend.repository.ProductRepository;
 import com.bazaar.backend.repository.UserRepository;
+import com.bazaar.backend.search.ProductSearchService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,10 +21,14 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final ProductSearchService productSearchService;
 
-    public ProductService(ProductRepository productRepository, UserRepository userRepository) {
+    public ProductService(
+            ProductRepository productRepository, UserRepository userRepository, ProductSearchService productSearchService
+    ) {
         this.productRepository = productRepository;
         this.userRepository = userRepository;
+        this.productSearchService = productSearchService;
     }
 
     @Transactional(readOnly = true)
@@ -66,6 +71,7 @@ public class ProductService {
                 .build();
 
         Product saved = productRepository.saveAndFlush(product);
+        productSearchService.syncProduct(saved);
         return ProductResponse.from(saved);
     }
 
@@ -82,6 +88,7 @@ public class ProductService {
         product.setDescription(blankToNull(request.description()));
 
         Product saved = productRepository.saveAndFlush(product);
+        productSearchService.syncProduct(saved);
         return ProductResponse.from(saved);
     }
 
@@ -89,6 +96,7 @@ public class ProductService {
     public void delete(UUID vendorId, UUID productId) {
         Product product = requireOwnedProduct(vendorId, productId);
         productRepository.delete(product);
+        productSearchService.deleteProduct(productId);
     }
 
     private Product requireOwnedProduct(UUID vendorId, UUID productId) {

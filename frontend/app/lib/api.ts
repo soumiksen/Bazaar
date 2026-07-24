@@ -118,6 +118,30 @@ export async function getProduct(id: string): Promise<ProductDetail> {
   return parseResponse<ProductDetail>(response);
 }
 
+export async function searchProducts(query: string): Promise<CatalogProduct[]> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/api/products/search?q=${encodeURIComponent(query)}`);
+  } catch {
+    throw new ApiError('Could not reach the server. Please try again.', 0);
+  }
+
+  return parseResponse<CatalogProduct[]>(response);
+}
+
+export async function suggestProducts(query: string): Promise<CatalogProduct[]> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/api/products/search/suggest?q=${encodeURIComponent(query)}`);
+  } catch {
+    throw new ApiError('Could not reach the server. Please try again.', 0);
+  }
+
+  return parseResponse<CatalogProduct[]>(response);
+}
+
 /**
  * Attaches the current access token and transparently retries once after a
  * silent token refresh if the server reports the token as expired/invalid.
