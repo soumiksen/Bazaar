@@ -27,13 +27,21 @@ export interface ProductDetail {
   createdAt: string;
 }
 
-export interface CartItemData {
+export interface CartItem {
   id: string;
+  productId: string;
   title: string;
-  price: string;
   category: string;
-  imageUrl: string;
+  price: number;
+  imageUrl: string | null;
+  stock: number;
   quantity: number;
+}
+
+export interface CartSummary {
+  items: CartItem[];
+  totalQuantity: number;
+  subtotal: number;
 }
 
 export type VendorProductStatus = 'ACTIVE' | 'DRAFT';

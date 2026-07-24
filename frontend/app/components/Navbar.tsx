@@ -10,18 +10,19 @@ import {
 import { GLASS_STYLES } from '../constants';
 import { logout as logoutRequest } from '@/app/lib/api';
 import { useAuthStore, selectIsAuthenticated } from '@/app/store/authStore';
+import { useCartStore } from '@/app/store/cartStore';
 
 interface NavbarProps {
-  cartItems?: number;
   onSearch?: (query: string) => void;
 }
 
-export default function Navbar({ cartItems = 0, onSearch }: NavbarProps) {
+export default function Navbar({ onSearch }: NavbarProps) {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const refreshToken = useAuthStore((state) => state.refreshToken);
   const clearSession = useAuthStore((state) => state.clearSession);
   const isLoggedIn = useAuthStore(selectIsAuthenticated);
+  const cartItems = useCartStore((state) => state.totalQuantity);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfile, setShowProfile] = useState(false);

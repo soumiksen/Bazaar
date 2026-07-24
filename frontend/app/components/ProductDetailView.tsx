@@ -1,12 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { ShoppingBagIcon, StarIcon, ArrowLeftIcon } from '@heroicons/react/24/solid';
+import { useRouter } from 'next/navigation';
+import { ShoppingBagIcon, StarIcon, ArrowLeftIcon, CheckIcon } from '@heroicons/react/24/solid';
 import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { GLASS_STYLES } from '@/app/constants';
 import ReviewCard from '@/app/components/ReviewCard';
 import { useAuthStore, selectIsAuthenticated } from '@/app/store/authStore';
+import { useCartStore } from '@/app/store/cartStore';
+import { addCartItem, ApiError } from '@/app/lib/api';
 import type { ProductDetail, Review } from '@/app/types';
 
 const FALLBACK_IMAGE_URL =
@@ -46,13 +49,39 @@ interface ProductDetailViewProps {
 }
 
 export default function ProductDetailView({ product }: ProductDetailViewProps) {
+  const router = useRouter();
   const isLoggedIn = useAuthStore(selectIsAuthenticated);
+  const setCart = useCartStore((state) => state.setCart);
   const [isFavorite, setIsFavorite] = useState(false);
   const [selectedColor, setSelectedColor] = useState(COLOR_SWATCHES[0].id);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [reviews, setReviews] = useState<Review[]>(INITIAL_REVIEWS);
   const [newComment, setNewComment] = useState('');
   const [newRating, setNewRating] = useState(5);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
+  const [cartError, setCartError] = useState<string | null>(null);
+
+  const handleAddToCart = async () => {
+    if (!isLoggedIn) {
+      router.push('/signin');
+      return;
+    }
+
+    setIsAddingToCart(true);
+    setCartError(null);
+
+    try {
+      const cart = await addCartItem(product.id, 1);
+      setCart(cart);
+      setJustAdded(true);
+      setTimeout(() => setJustAdded(false), 2000);
+    } catch (error) {
+      setCartError(error instanceof ApiError ? error.message : 'Could not add to cart. Please try again.');
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
 
   const averageRating =
     reviews.length === 0 ? 0 : reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
@@ -186,14 +215,27 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
                 </span>
               </div>
 
-              <button
-                type="button"
-                disabled={product.stock === 0}
-                className="flex items-center gap-2 rounded-full bg-neutral-950 px-6 py-3.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:bg-neutral-800 hover:scale-[1.02] active:scale-95 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
-              >
-                <ShoppingBagIcon className="h-4 w-4" />
-                <span>Add to Shopping Bag</span>
-              </button>
+              <div className="flex flex-col items-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={product.stock === 0 || isAddingToCart}
+                  className="flex items-center gap-2 rounded-full bg-neutral-950 px-6 py-3.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:bg-neutral-800 hover:scale-[1.02] active:scale-95 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                >
+                  {justAdded ? (
+                    <>
+                      <CheckIcon className="h-4 w-4" />
+                      <span>Added to Bag</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBagIcon className="h-4 w-4" />
+                      <span>{isAddingToCart ? 'Adding...' : 'Add to Shopping Bag'}</span>
+                    </>
+                  )}
+                </button>
+                {cartError && <span className="text-xs font-medium text-red-500">{cartError}</span>}
+              </div>
             </div>
           </div>
         </div>

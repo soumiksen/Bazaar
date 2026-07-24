@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/app/store/authStore';
-import type { CatalogProduct, ProductDetail, VendorProduct, VendorProductInput } from '@/app/types';
+import type { CartSummary, CatalogProduct, ProductDetail, VendorProduct, VendorProductInput } from '@/app/types';
 
 export type Role = 'CUSTOMER' | 'VENDOR' | 'ADMIN';
 
@@ -179,4 +179,26 @@ export function updateVendorProduct(id: string, input: VendorProductInput): Prom
 
 export function deleteVendorProduct(id: string): Promise<void> {
   return authorizedRequest<void>(`/api/vendor/products/${id}`, { method: 'DELETE' });
+}
+
+export function getCart(): Promise<CartSummary> {
+  return authorizedRequest<CartSummary>('/api/cart');
+}
+
+export function addCartItem(productId: string, quantity: number = 1): Promise<CartSummary> {
+  return authorizedRequest<CartSummary>('/api/cart/items', {
+    method: 'POST',
+    body: JSON.stringify({ productId, quantity }),
+  });
+}
+
+export function updateCartItemQuantity(cartItemId: string, quantity: number): Promise<CartSummary> {
+  return authorizedRequest<CartSummary>(`/api/cart/items/${cartItemId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ quantity }),
+  });
+}
+
+export function removeCartItem(cartItemId: string): Promise<CartSummary> {
+  return authorizedRequest<CartSummary>(`/api/cart/items/${cartItemId}`, { method: 'DELETE' });
 }

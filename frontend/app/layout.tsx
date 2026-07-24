@@ -3,6 +3,7 @@ import { Roboto } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/Navbar";
 import AuthHydrator from "./components/AuthHydrator";
+import CartHydrator from "./components/CartHydrator";
 
 const roboto = Roboto({
   variable: "--font-roboto",
@@ -43,7 +44,8 @@ export default function RootLayout({
 
         {/* --- INTERFACE LAYERS --- */}
         <AuthHydrator />
-        <Navbar cartItems={0} />
+        <CartHydrator />
+        <Navbar />
         <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 py-6 md:py-8">
           {children}
         </main>

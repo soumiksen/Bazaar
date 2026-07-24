@@ -6,10 +6,11 @@ import { GLASS_STYLES } from '@/app/constants';
 interface CartItemProps {
   id: string;
   title: string;
-  price: string;
+  price: number;
   category: string;
-  imageUrl: string;
+  imageUrl: string | null;
   quantity: number;
+  maxQuantity?: number;
   onQuantityChange?: (id: string, delta: number) => void;
   onRemove?: (id: string) => void;
 }
@@ -21,14 +22,16 @@ export default function CartItem({
   category,
   imageUrl,
   quantity,
+  maxQuantity,
   onQuantityChange,
   onRemove,
 }: CartItemProps) {
+  const atMaxQuantity = maxQuantity !== undefined && quantity >= maxQuantity;
   return (
     <div className={`p-4 flex flex-col sm:flex-row items-center gap-6 ${GLASS_STYLES.container}`}>
       <div className="relative h-24 w-24 sm:h-32 sm:w-32 flex-shrink-0 overflow-hidden rounded-2xl bg-neutral-100/40 border border-white/20">
         <img
-          src={imageUrl}
+          src={imageUrl ?? undefined}
           alt={title}
           className="h-full w-full object-cover mix-blend-multiply"
         />
@@ -38,7 +41,7 @@ export default function CartItem({
         <div className="space-y-1 text-center sm:text-left">
           <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">{category}</span>
           <h3 className="text-base font-bold text-neutral-800 leading-tight">{title}</h3>
-          <p className="text-lg font-black text-neutral-900">{price}</p>
+          <p className="text-lg font-black text-neutral-900">${price.toFixed(2)}</p>
         </div>
 
         <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
@@ -55,8 +58,9 @@ export default function CartItem({
             <button
               type="button"
               aria-label="Increase quantity"
+              disabled={atMaxQuantity}
               onClick={() => onQuantityChange?.(id, 1)}
-              className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-white/60 transition-colors cursor-pointer"
+              className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-white/60 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
             >
               <PlusIcon className="h-3.5 w-3.5 text-neutral-600" />
             </button>
