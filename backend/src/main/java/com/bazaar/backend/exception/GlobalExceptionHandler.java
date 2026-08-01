@@ -72,6 +72,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
+    @ExceptionHandler(ReviewNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleReviewNotFound(ReviewNotFoundException ex) {
+        ErrorResponse body = new ErrorResponse(HttpStatus.NOT_FOUND.value(), "Not Found", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    @ExceptionHandler(DuplicateReviewException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateReview(DuplicateReviewException ex) {
+        ErrorResponse body = new ErrorResponse(HttpStatus.CONFLICT.value(), "Conflict", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
     @ExceptionHandler(InsufficientStockException.class)
     public ResponseEntity<ErrorResponse> handleInsufficientStock(InsufficientStockException ex) {
         ErrorResponse body = new ErrorResponse(HttpStatus.CONFLICT.value(), "Conflict", ex.getMessage());

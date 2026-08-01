@@ -10,8 +10,8 @@ import ReviewCard from '@/app/components/ReviewCard';
 import { useAuthStore, selectIsAuthenticated } from '@/app/store/authStore';
 import { useCartStore } from '@/app/store/cartStore';
 import { useLikeStore } from '@/app/store/likeStore';
-import { addCartItem, likeProduct, unlikeProduct, ApiError } from '@/app/lib/api';
-import type { ProductDetail, Review } from '@/app/types';
+import { addCartItem, likeProduct, unlikeProduct, createReview, updateReview, deleteReview, ApiError } from '@/app/lib/api';
+import type { ProductDetail, ProductReviews } from '@/app/types';
 
 const FALLBACK_IMAGE_URL =
   'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=80';
@@ -24,46 +24,32 @@ const COLOR_SWATCHES = [
   { id: 'cyan', class: 'bg-cyan-400 ring-cyan-300' },
 ];
 
-const INITIAL_REVIEWS: Review[] = [
-  {
-    id: 1,
-    name: 'Alex Ryman',
-    rating: 5,
-    date: '2 days ago',
-    comment:
-      'The soundstage on these is incredibly wide. The glass design elements match my desktop setup perfectly, and the battery easily lasts all week.',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-  },
-  {
-    id: 2,
-    name: 'Sarah Jenkins',
-    rating: 4,
-    date: '1 week ago',
-    comment:
-      'Super crisp highs and deep bass without distortion. The earcups feel premium, though it takes a day or two to fully break them in.',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
-  },
-];
-
 interface ProductDetailViewProps {
   product: ProductDetail;
+  reviews: ProductReviews;
 }
 
-export default function ProductDetailView({ product }: ProductDetailViewProps) {
+export default function ProductDetailView({ product, reviews: initialReviews }: ProductDetailViewProps) {
   const router = useRouter();
   const isLoggedIn = useAuthStore(selectIsAuthenticated);
+  const currentUserId = useAuthStore((state) => state.user?.id);
   const setCart = useCartStore((state) => state.setCart);
   const isFavorite = useLikeStore((state) => state.likedProductIds.has(product.id));
   const setLikes = useLikeStore((state) => state.setLikes);
   const [selectedColor, setSelectedColor] = useState(COLOR_SWATCHES[0].id);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const [reviews, setReviews] = useState<Review[]>(INITIAL_REVIEWS);
+  const [reviewsData, setReviewsData] = useState<ProductReviews>(initialReviews);
+  const [isEditingReview, setIsEditingReview] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [newRating, setNewRating] = useState(5);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [cartError, setCartError] = useState<string | null>(null);
   const [isTogglingLike, setIsTogglingLike] = useState(false);
+
+  const myReview = reviewsData.items.find((review) => review.userId === currentUserId) ?? null;
 
   const handleAddToCart = async () => {
     if (!isLoggedIn) {
@@ -105,28 +91,58 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
     }
   };
 
-  const averageRating =
-    reviews.length === 0 ? 0 : reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
-
-  const handleSubmitReview = (e: React.FormEvent) => {
+  const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (isSubmittingReview) return;
 
-    const reviewerName = useAuthStore.getState().user?.name ?? 'You';
+    setIsSubmittingReview(true);
+    setReviewError(null);
 
-    setReviews((prev) => [
-      {
-        id: Date.now(),
-        name: reviewerName,
-        rating: newRating,
-        date: 'Just now',
-        comment: newComment,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-      },
-      ...prev,
-    ]);
+    try {
+      const response = myReview
+        ? await updateReview(product.id, newRating, newComment)
+        : await createReview(product.id, newRating, newComment);
+      setReviewsData(response);
+      setNewComment('');
+      setNewRating(5);
+      setIsEditingReview(false);
+    } catch (error) {
+      setReviewError(error instanceof ApiError ? error.message : 'Could not submit your review. Please try again.');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const handleStartEditReview = () => {
+    if (!myReview) return;
+    setNewRating(myReview.rating);
+    setNewComment(myReview.comment ?? '');
+    setReviewError(null);
+    setIsEditingReview(true);
+  };
+
+  const handleCancelEditReview = () => {
+    setIsEditingReview(false);
     setNewComment('');
     setNewRating(5);
+    setReviewError(null);
+  };
+
+  const handleDeleteReview = async () => {
+    if (isSubmittingReview) return;
+
+    setIsSubmittingReview(true);
+    setReviewError(null);
+
+    try {
+      const response = await deleteReview(product.id);
+      setReviewsData(response);
+      setIsEditingReview(false);
+    } catch (error) {
+      setReviewError(error instanceof ApiError ? error.message : 'Could not delete your review. Please try again.');
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   return (
@@ -188,10 +204,10 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
             <div className="flex items-center gap-3 text-sm font-medium text-neutral-600">
               <div className="flex items-center gap-1 rounded-full bg-white/40 border border-white/50 px-2.5 py-1 backdrop-blur-sm">
                 <StarIcon className="h-4 w-4 text-amber-400" />
-                <span className="font-bold text-neutral-800">{averageRating.toFixed(1)}</span>
+                <span className="font-bold text-neutral-800">{reviewsData.averageRating.toFixed(1)}</span>
               </div>
               <span className="text-neutral-400 text-xs">
-                {reviews.length} review{reviews.length === 1 ? '' : 's'}
+                {reviewsData.totalCount} review{reviewsData.totalCount === 1 ? '' : 's'}
               </span>
               <span className="text-neutral-400 text-xs">Sold by {product.vendorName}</span>
             </div>
@@ -272,46 +288,74 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
         </div>
 
         {isLoggedIn ? (
-          <form onSubmit={handleSubmitReview} className={`p-5 space-y-4 ${GLASS_STYLES.container}`}>
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-neutral-800">Share your experience</span>
-
-              <div className="flex items-center gap-1 bg-white/40 border border-white/50 rounded-full px-2.5 py-1 backdrop-blur-sm">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    aria-label={`Rate ${star} star${star !== 1 ? 's' : ''}`}
-                    onClick={() => setNewRating(star)}
-                    className="outline-none transition-transform hover:scale-125 cursor-pointer"
-                  >
-                    <StarIcon
-                      className={`h-4 w-4 transition-colors ${
-                        star <= newRating ? 'text-amber-400' : 'text-neutral-300'
-                      }`}
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Write your thoughts about this product..."
-              rows={3}
-              className="w-full rounded-2xl border border-zinc-200 bg-white/40 p-4 text-sm text-neutral-800 placeholder-neutral-400 outline-none backdrop-blur-sm transition-all focus:bg-white/60 focus:border-neutral-300 resize-none"
-            />
-
-            <div className="flex justify-end">
+          myReview && !isEditingReview ? (
+            <div
+              className={`flex items-center justify-between p-4 text-sm font-medium text-neutral-600 ${GLASS_STYLES.container}`}
+            >
+              <span>You&rsquo;ve already reviewed this product.</span>
               <button
-                type="submit"
-                className="rounded-full bg-neutral-950 px-5 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-neutral-800 hover:scale-105 active:scale-95 cursor-pointer"
+                type="button"
+                onClick={handleStartEditReview}
+                className="rounded-full bg-neutral-950 px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-neutral-800 hover:scale-105 active:scale-95 cursor-pointer"
               >
-                Submit Review
+                Edit Your Review
               </button>
             </div>
-          </form>
+          ) : (
+            <form onSubmit={handleSubmitReview} className={`p-5 space-y-4 ${GLASS_STYLES.container}`}>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-neutral-800">
+                  {isEditingReview ? 'Update your review' : 'Share your experience'}
+                </span>
+
+                <div className="flex items-center gap-1 bg-white/40 border border-white/50 rounded-full px-2.5 py-1 backdrop-blur-sm">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      aria-label={`Rate ${star} star${star !== 1 ? 's' : ''}`}
+                      onClick={() => setNewRating(star)}
+                      className="outline-none transition-transform hover:scale-125 cursor-pointer"
+                    >
+                      <StarIcon
+                        className={`h-4 w-4 transition-colors ${
+                          star <= newRating ? 'text-amber-400' : 'text-neutral-300'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Write your thoughts about this product..."
+                rows={3}
+                className="w-full rounded-2xl border border-zinc-200 bg-white/40 p-4 text-sm text-neutral-800 placeholder-neutral-400 outline-none backdrop-blur-sm transition-all focus:bg-white/60 focus:border-neutral-300 resize-none"
+              />
+
+              <div className="flex items-center justify-end gap-3">
+                {reviewError && <span className="text-xs font-medium text-red-500 mr-auto">{reviewError}</span>}
+                {isEditingReview && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEditReview}
+                    className="rounded-full px-4 py-2 text-xs font-bold text-neutral-500 transition-all hover:text-neutral-800 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={isSubmittingReview}
+                  className="rounded-full bg-neutral-950 px-5 py-2 text-xs font-bold text-white shadow-md transition-all hover:bg-neutral-800 hover:scale-105 active:scale-95 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmittingReview ? 'Saving...' : isEditingReview ? 'Update Review' : 'Submit Review'}
+                </button>
+              </div>
+            </form>
+          )
         ) : (
           <div className={`p-4 text-center text-sm text-neutral-500 font-medium ${GLASS_STYLES.container}`}>
             Please{' '}
@@ -323,8 +367,17 @@ export default function ProductDetailView({ product }: ProductDetailViewProps) {
         )}
 
         <div className="flex flex-col gap-4">
-          {reviews.map((review) => (
-            <ReviewCard key={review.id} review={review} />
+          {reviewsData.items.length === 0 && (
+            <p className="text-sm text-neutral-400 font-medium px-1">No reviews yet. Be the first to share yours.</p>
+          )}
+          {reviewsData.items.map((review) => (
+            <ReviewCard
+              key={review.id}
+              review={review}
+              isOwnReview={review.userId === currentUserId}
+              onEdit={handleStartEditReview}
+              onDelete={handleDeleteReview}
+            />
           ))}
         </div>
       </section>

@@ -16,6 +16,7 @@ interface ProductCardProps {
   category?: string;
   price?: string;
   rating?: number;
+  reviewCount?: number;
   imageUrl?: string;
   onAddToCart?: (id: string) => void;
 }
@@ -25,7 +26,8 @@ export default function ProductCard({
   title = 'Premium Wireless Headphones',
   category = 'Electronics',
   price = '$199.00',
-  rating = 4.8,
+  rating,
+  reviewCount = 0,
   imageUrl = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80',
   onAddToCart,
 }: ProductCardProps) {
@@ -100,13 +102,19 @@ export default function ProductCard({
               {category}
             </span>
 
-            <div
-              className="flex items-center gap-1 rounded-full bg-white/40 border border-white/50 px-2 py-0.5 backdrop-blur-sm text-[11px] font-medium text-neutral-600"
-              aria-label={`Rated ${rating} out of 5 stars`}
-            >
-              <StarIcon className="h-3 w-3 text-amber-400 fill-current" />
-              <span>{rating}</span>
-            </div>
+            {reviewCount > 0 && rating !== undefined ? (
+              <div
+                className="flex items-center gap-1 rounded-full bg-white/40 border border-white/50 px-2 py-0.5 backdrop-blur-sm text-[11px] font-medium text-neutral-600"
+                aria-label={`Rated ${rating.toFixed(1)} out of 5 stars from ${reviewCount} review${reviewCount === 1 ? '' : 's'}`}
+              >
+                <StarIcon className="h-3 w-3 text-amber-400 fill-current" />
+                <span>{rating.toFixed(1)}</span>
+              </div>
+            ) : (
+              <span className="rounded-full bg-white/40 border border-white/50 px-2 py-0.5 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                New
+              </span>
+            )}
           </div>
 
           <h3 className="text-base font-semibold tracking-tight text-neutral-800 transition-colors group-hover:text-black line-clamp-1">

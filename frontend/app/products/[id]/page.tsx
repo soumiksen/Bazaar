@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { ApiError, getProduct } from '@/app/lib/api';
+import { ApiError, getProduct, getProductReviews } from '@/app/lib/api';
 import ProductDetailView from '@/app/components/ProductDetailView';
 
 interface ProductDetailPageProps {
@@ -16,5 +16,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
     throw error;
   });
 
-  return <ProductDetailView product={product} />;
+  const reviews = await getProductReviews(id).catch(() => ({ items: [], totalCount: 0, averageRating: 0 }));
+
+  return <ProductDetailView product={product} reviews={reviews} />;
 }

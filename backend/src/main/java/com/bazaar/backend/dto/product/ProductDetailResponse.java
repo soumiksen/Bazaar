@@ -15,9 +15,11 @@ public record ProductDetailResponse(
         String imageUrl,
         String description,
         String vendorName,
-        Instant createdAt
+        Instant createdAt,
+        double averageRating,
+        int reviewCount
 ) {
-    public static ProductDetailResponse from(Product product) {
+    public static ProductDetailResponse from(Product product, Double averageRating, Long reviewCount) {
         return new ProductDetailResponse(
                 product.getId(),
                 product.getTitle(),
@@ -27,7 +29,9 @@ public record ProductDetailResponse(
                 product.getImageUrl(),
                 product.getDescription(),
                 product.getVendor().getName(),
-                product.getCreatedAt()
+                product.getCreatedAt(),
+                averageRating == null ? 0.0 : averageRating,
+                reviewCount == null ? 0 : reviewCount.intValue()
         );
     }
 }

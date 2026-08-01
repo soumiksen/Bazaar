@@ -4,6 +4,7 @@ import type {
   CatalogProduct,
   LikesSummary,
   ProductDetail,
+  ProductReviews,
   VendorProduct,
   VendorProductInput,
 } from '@/app/types';
@@ -149,6 +150,18 @@ export async function suggestProducts(query: string): Promise<CatalogProduct[]> 
   return parseResponse<CatalogProduct[]>(response);
 }
 
+export async function getProductReviews(productId: string): Promise<ProductReviews> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}/api/products/${productId}/reviews`);
+  } catch {
+    throw new ApiError('Could not reach the server. Please try again.', 0);
+  }
+
+  return parseResponse<ProductReviews>(response);
+}
+
 /**
  * Attaches the current access token and transparently retries once after a
  * silent token refresh if the server reports the token as expired/invalid.
@@ -247,4 +260,22 @@ export function likeProduct(productId: string): Promise<LikesSummary> {
 
 export function unlikeProduct(productId: string): Promise<LikesSummary> {
   return authorizedRequest<LikesSummary>(`/api/likes/${productId}`, { method: 'DELETE' });
+}
+
+export function createReview(productId: string, rating: number, comment: string): Promise<ProductReviews> {
+  return authorizedRequest<ProductReviews>(`/api/products/${productId}/reviews`, {
+    method: 'POST',
+    body: JSON.stringify({ rating, comment }),
+  });
+}
+
+export function updateReview(productId: string, rating: number, comment: string): Promise<ProductReviews> {
+  return authorizedRequest<ProductReviews>(`/api/products/${productId}/reviews`, {
+    method: 'PUT',
+    body: JSON.stringify({ rating, comment }),
+  });
+}
+
+export function deleteReview(productId: string): Promise<ProductReviews> {
+  return authorizedRequest<ProductReviews>(`/api/products/${productId}/reviews`, { method: 'DELETE' });
 }

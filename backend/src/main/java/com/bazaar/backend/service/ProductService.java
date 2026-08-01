@@ -8,13 +8,18 @@ import com.bazaar.backend.entity.Product;
 import com.bazaar.backend.entity.ProductStatus;
 import com.bazaar.backend.exception.ProductNotFoundException;
 import com.bazaar.backend.repository.ProductRepository;
+import com.bazaar.backend.repository.ProductReviewRepository;
+import com.bazaar.backend.repository.ProductReviewRepository.ProductRatingSummary;
 import com.bazaar.backend.repository.UserRepository;
 import com.bazaar.backend.search.ProductSearchService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
@@ -22,13 +27,18 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final ProductSearchService productSearchService;
+    private final ProductReviewRepository productReviewRepository;
 
     public ProductService(
-            ProductRepository productRepository, UserRepository userRepository, ProductSearchService productSearchService
+            ProductRepository productRepository,
+            UserRepository userRepository,
+            ProductSearchService productSearchService,
+            ProductReviewRepository productReviewRepository
     ) {
         this.productRepository = productRepository;
         this.userRepository = userRepository;
         this.productSearchService = productSearchService;
+        this.productReviewRepository = productReviewRepository;
     }
 
     @Transactional(readOnly = true)
@@ -40,8 +50,18 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public List<CatalogProductResponse> listActive() {
-        return productRepository.findAllByStatusOrderByCreatedAtDesc(ProductStatus.ACTIVE).stream()
-                .map(CatalogProductResponse::from)
+        List<Product> products = productRepository.findAllByStatusOrderByCreatedAtDesc(ProductStatus.ACTIVE);
+        Map<UUID, ProductRatingSummary> ratings = ratingSummariesByProductId(products.stream().map(Product::getId).toList());
+
+        return products.stream()
+                .map(product -> {
+                    ProductRatingSummary summary = ratings.get(product.getId());
+                    return CatalogProductResponse.from(
+                            product,
+                            summary == null ? null : summary.getAverageRating(),
+                            summary == null ? null : summary.getReviewCount()
+                    );
+                })
                 .toList();
     }
 
@@ -49,7 +69,13 @@ public class ProductService {
     public ProductDetailResponse getActiveById(UUID productId) {
         Product product = productRepository.findByIdAndStatus(productId, ProductStatus.ACTIVE)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found"));
-        return ProductDetailResponse.from(product);
+
+        ProductRatingSummary summary = ratingSummariesByProductId(List.of(productId)).get(productId);
+        return ProductDetailResponse.from(
+                product,
+                summary == null ? null : summary.getAverageRating(),
+                summary == null ? null : summary.getReviewCount()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -106,5 +132,13 @@ public class ProductService {
 
     private static String blankToNull(String value) {
         return (value == null || value.isBlank()) ? null : value.trim();
+    }
+
+    private Map<UUID, ProductRatingSummary> ratingSummariesByProductId(List<UUID> productIds) {
+        if (productIds.isEmpty()) {
+            return Map.of();
+        }
+        return productReviewRepository.findRatingSummaries(productIds).stream()
+                .collect(Collectors.toMap(ProductRatingSummary::getProductId, Function.identity()));
     }
 }

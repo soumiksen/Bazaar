@@ -38,6 +38,8 @@ export default async function Home({ searchParams }: HomeProps) {
             title={product.title}
             category={product.category}
             price={`$${product.price.toFixed(2)}`}
+            rating={product.averageRating}
+            reviewCount={product.reviewCount}
             imageUrl={product.imageUrl ?? undefined}
           />
         ))}

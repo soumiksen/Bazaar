@@ -1,10 +1,18 @@
 export interface Review {
-  id: number;
-  name: string;
+  id: string;
+  productId: string;
+  userId: string;
+  userName: string;
   rating: number;
-  date: string;
-  comment: string;
-  avatar: string;
+  comment: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductReviews {
+  items: Review[];
+  totalCount: number;
+  averageRating: number;
 }
 
 export interface CatalogProduct {
@@ -13,6 +21,8 @@ export interface CatalogProduct {
   category: string;
   price: number;
   imageUrl: string | null;
+  averageRating: number;
+  reviewCount: number;
 }
 
 export interface ProductDetail {
@@ -25,6 +35,8 @@ export interface ProductDetail {
   description: string | null;
   vendorName: string;
   createdAt: string;
+  averageRating: number;
+  reviewCount: number;
 }
 
 export interface CartItem {

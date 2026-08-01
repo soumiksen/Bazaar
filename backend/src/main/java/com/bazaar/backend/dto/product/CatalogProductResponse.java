@@ -11,15 +11,19 @@ public record CatalogProductResponse(
         String title,
         String category,
         BigDecimal price,
-        String imageUrl
+        String imageUrl,
+        double averageRating,
+        int reviewCount
 ) {
-    public static CatalogProductResponse from(Product product) {
+    public static CatalogProductResponse from(Product product, Double averageRating, Long reviewCount) {
         return new CatalogProductResponse(
                 product.getId(),
                 product.getTitle(),
                 product.getCategory(),
                 product.getPrice(),
-                product.getImageUrl()
+                product.getImageUrl(),
+                averageRating == null ? 0.0 : averageRating,
+                reviewCount == null ? 0 : reviewCount.intValue()
         );
     }
 
@@ -29,7 +33,9 @@ public record CatalogProductResponse(
                 document.getTitle(),
                 document.getCategory(),
                 BigDecimal.valueOf(document.getPrice()),
-                document.getImageUrl()
+                document.getImageUrl(),
+                0.0,
+                0
         );
     }
 }
