@@ -15,7 +15,15 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "Starting backend (mvn spring-boot:run)..."
-(cd "$BACKEND_DIR" && mvn spring-boot:run) &
+(
+  cd "$BACKEND_DIR"
+  if [[ -f .env ]]; then
+    set -a
+    source .env
+    set +a
+  fi
+  mvn spring-boot:run
+) &
 BACKEND_PID=$!
 
 echo "Starting frontend (npm run dev)..."

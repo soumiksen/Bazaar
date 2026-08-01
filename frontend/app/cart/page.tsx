@@ -8,7 +8,7 @@ import CartItem from '@/app/components/CartItem';
 import Button, { buttonVariants } from '@/app/components/Button';
 import { GLASS_STYLES } from '@/app/constants';
 import { useCartStore } from '@/app/store/cartStore';
-import { removeCartItem, updateCartItemQuantity, ApiError } from '@/app/lib/api';
+import { removeCartItem, updateCartItemQuantity, createCheckoutSession, ApiError } from '@/app/lib/api';
 
 export default function CartPage() {
   const items = useCartStore((state) => state.items);
@@ -19,6 +19,20 @@ export default function CartPage() {
 
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+
+  const handleCheckout = async () => {
+    setIsCheckingOut(true);
+    setError(null);
+
+    try {
+      const { checkoutUrl } = await createCheckoutSession();
+      window.location.href = checkoutUrl;
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not start checkout. Please try again.');
+      setIsCheckingOut(false);
+    }
+  };
 
   const handleQuantityChange = async (id: string, delta: number) => {
     const item = items.find((cartItem) => cartItem.id === id);
@@ -131,9 +145,9 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <Button width="full" variant="primary">
+              <Button width="full" variant="primary" onClick={handleCheckout} disabled={isCheckingOut}>
                 <CreditCardIcon className="h-5 w-5" />
-                <span>Proceed to Checkout</span>
+                <span>{isCheckingOut ? 'Redirecting to Stripe...' : 'Proceed to Checkout'}</span>
               </Button>
 
               <div className="flex justify-center items-center gap-4 opacity-30 grayscale pointer-events-none" aria-hidden="true">

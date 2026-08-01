@@ -71,6 +71,37 @@ export interface LikesSummary {
   totalCount: number;
 }
 
+export type OrderStatus = 'PENDING' | 'PAID' | 'FAILED' | 'CANCELED';
+
+export interface CheckoutSession {
+  checkoutUrl: string;
+  orderId: string;
+}
+
+export interface OrderItem {
+  id: string;
+  productId: string | null;
+  title: string;
+  unitPrice: number;
+  quantity: number;
+}
+
+export interface Order {
+  id: string;
+  status: OrderStatus;
+  subtotal: number;
+  items: OrderItem[];
+  createdAt: string;
+}
+
+export interface OrderSummary {
+  id: string;
+  status: OrderStatus;
+  subtotal: number;
+  itemCount: number;
+  createdAt: string;
+}
+
 export type VendorProductStatus = 'ACTIVE' | 'DRAFT';
 
 export interface VendorProduct {

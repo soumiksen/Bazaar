@@ -2,7 +2,10 @@ import { useAuthStore } from '@/app/store/authStore';
 import type {
   CartSummary,
   CatalogProduct,
+  CheckoutSession,
   LikesSummary,
+  Order,
+  OrderSummary,
   ProductDetail,
   ProductReviews,
   VendorProduct,
@@ -278,4 +281,20 @@ export function updateReview(productId: string, rating: number, comment: string)
 
 export function deleteReview(productId: string): Promise<ProductReviews> {
   return authorizedRequest<ProductReviews>(`/api/products/${productId}/reviews`, { method: 'DELETE' });
+}
+
+export function createCheckoutSession(): Promise<CheckoutSession> {
+  return authorizedRequest<CheckoutSession>('/api/checkout/session', { method: 'POST' });
+}
+
+export function listOrders(): Promise<OrderSummary[]> {
+  return authorizedRequest<OrderSummary[]>('/api/orders');
+}
+
+export function getOrder(id: string): Promise<Order> {
+  return authorizedRequest<Order>(`/api/orders/${id}`);
+}
+
+export function getOrderBySession(sessionId: string): Promise<Order> {
+  return authorizedRequest<Order>(`/api/orders/by-session/${encodeURIComponent(sessionId)}`);
 }
