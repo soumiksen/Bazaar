@@ -148,15 +148,7 @@ export default function ProductDetailView({ product, reviews: initialReviews }: 
   return (
     <div className="space-y-12 animate-in fade-in duration-500 pb-12">
 
-      <div className="flex items-center justify-between">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/30 px-4 py-2 text-sm font-medium text-neutral-700 backdrop-blur-md transition-all hover:bg-white/60 active:scale-95"
-        >
-          <ArrowLeftIcon className="h-4 w-4" />
-          <span>Back to products</span>
-        </Link>
-      </div>
+      
 
       <div className={`grid grid-cols-1 gap-8 md:grid-cols-12 p-6 md:p-8 ${GLASS_STYLES.container}`}>
 
@@ -223,25 +215,7 @@ export default function ProductDetailView({ product, reviews: initialReviews }: 
           </div>
 
           <div className="space-y-6 pt-4">
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 block mb-3">
-                Popular Colors
-              </span>
-              <div className="flex items-center gap-3">
-                {COLOR_SWATCHES.map((color) => (
-                  <button
-                    key={color.id}
-                    type="button"
-                    aria-label={`Select ${color.id} color`}
-                    aria-pressed={selectedColor === color.id}
-                    onClick={() => setSelectedColor(color.id)}
-                    className={`h-6 w-6 rounded-full transition-all duration-300 shadow-sm hover:scale-110 active:scale-95 cursor-pointer ${color.class} ${
-                      selectedColor === color.id ? 'ring-2 ring-offset-2 ring-neutral-800' : ''
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
+            
 
             <div className="flex items-center justify-between border-t border-white/20 pt-6">
               <div className="flex flex-col">

@@ -23,12 +23,12 @@ interface ProductCardProps {
 
 export default function ProductCard({
   id,
-  title = 'Premium Wireless Headphones',
-  category = 'Electronics',
-  price = '$199.00',
+  title,
+  category,
+  price,
   rating,
   reviewCount = 0,
-  imageUrl = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80',
+  imageUrl,
   onAddToCart,
 }: ProductCardProps) {
   const router = useRouter();
