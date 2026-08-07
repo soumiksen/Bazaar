@@ -7,6 +7,8 @@ A full-stack multi-vendor ecommerce platform.
 - Secure authentication and authorization powered by JWT
 - Shopping cart and wishlist that persist to the backend per user
 - Fast, typo-tolerant product search with autocomplete, powered by Elasticsearch
+- Checkout and payment processing powered by Stripe
+- Redis-backed caching for product catalog data to reduce database load
 
 ## Tech Stack
 
@@ -30,6 +32,11 @@ A full-stack multi-vendor ecommerce platform.
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Flyway](https://img.shields.io/badge/Flyway-CC0200?style=for-the-badge&logo=flyway&logoColor=white)
 ![Elasticsearch](https://img.shields.io/badge/Elasticsearch-005571?style=for-the-badge&logo=elasticsearch&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+
+**Payments**
+
+![Stripe](https://img.shields.io/badge/Stripe-635BFF?style=for-the-badge&logo=stripe&logoColor=white)
 
 **Tooling**
 

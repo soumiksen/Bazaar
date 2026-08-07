@@ -12,6 +12,9 @@ import com.bazaar.backend.repository.ProductReviewRepository;
 import com.bazaar.backend.repository.ProductReviewRepository.ProductRatingSummary;
 import com.bazaar.backend.repository.UserRepository;
 import com.bazaar.backend.search.ProductSearchService;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,6 +51,7 @@ public class ProductService {
                 .toList();
     }
 
+    @Cacheable(cacheNames = "products", key = "'all'")
     @Transactional(readOnly = true)
     public List<CatalogProductResponse> listActive() {
         List<Product> products = productRepository.findAllByStatusOrderByCreatedAtDesc(ProductStatus.ACTIVE);
@@ -65,6 +69,7 @@ public class ProductService {
                 .toList();
     }
 
+    @Cacheable(cacheNames = "product", key = "#productId")
     @Transactional(readOnly = true)
     public ProductDetailResponse getActiveById(UUID productId) {
         Product product = productRepository.findByIdAndStatus(productId, ProductStatus.ACTIVE)
@@ -83,6 +88,7 @@ public class ProductService {
         return ProductResponse.from(requireOwnedProduct(vendorId, productId));
     }
 
+    @CacheEvict(cacheNames = "products", key = "'all'")
     @Transactional
     public ProductResponse create(UUID vendorId, ProductRequest request) {
         Product product = Product.builder()
@@ -101,6 +107,10 @@ public class ProductService {
         return ProductResponse.from(saved);
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "products", key = "'all'"),
+            @CacheEvict(cacheNames = "product", key = "#productId")
+    })
     @Transactional
     public ProductResponse update(UUID vendorId, UUID productId, ProductRequest request) {
         Product product = requireOwnedProduct(vendorId, productId);
@@ -118,6 +128,10 @@ public class ProductService {
         return ProductResponse.from(saved);
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "products", key = "'all'"),
+            @CacheEvict(cacheNames = "product", key = "#productId")
+    })
     @Transactional
     public void delete(UUID vendorId, UUID productId) {
         Product product = requireOwnedProduct(vendorId, productId);

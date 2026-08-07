@@ -11,6 +11,8 @@ import com.bazaar.backend.exception.ReviewNotFoundException;
 import com.bazaar.backend.repository.ProductRepository;
 import com.bazaar.backend.repository.ProductReviewRepository;
 import com.bazaar.backend.repository.UserRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +40,10 @@ public class ReviewService {
         return ProductReviewsResponse.from(productReviewRepository.findAllByProductIdOrderByCreatedAtDesc(productId));
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "products", key = "'all'"),
+            @CacheEvict(cacheNames = "product", key = "#productId")
+    })
     @Transactional
     public ProductReviewsResponse createReview(UUID userId, UUID productId, ReviewRequest request) {
         Product product = productRepository.findByIdAndStatus(productId, ProductStatus.ACTIVE)
@@ -58,6 +64,10 @@ public class ReviewService {
         return getReviews(productId);
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "products", key = "'all'"),
+            @CacheEvict(cacheNames = "product", key = "#productId")
+    })
     @Transactional
     public ProductReviewsResponse updateReview(UUID userId, UUID productId, ReviewRequest request) {
         ProductReview review = productReviewRepository.findByUserIdAndProductId(userId, productId)
@@ -69,6 +79,10 @@ public class ReviewService {
         return getReviews(productId);
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "products", key = "'all'"),
+            @CacheEvict(cacheNames = "product", key = "#productId")
+    })
     @Transactional
     public ProductReviewsResponse deleteReview(UUID userId, UUID productId) {
         ProductReview review = productReviewRepository.findByUserIdAndProductId(userId, productId)
