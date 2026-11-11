@@ -47,6 +47,10 @@ public class User {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean verified = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

@@ -3,12 +3,15 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { ChevronDown, Menu, Store, X } from 'lucide-react';
 import {
   HeartIcon,
   MagnifyingGlassIcon,
   ShoppingBagIcon,
 } from '@heroicons/react/24/outline';
 import { GLASS_STYLES } from '../constants';
+import { ALL_CATEGORIES, CATEGORY_GROUPS, categoryHref } from '@/app/lib/catalog';
 import { logout as logoutRequest, suggestProducts } from '@/app/lib/api';
 import { useAuthStore, selectIsAuthenticated } from '@/app/store/authStore';
 import { useCartStore } from '@/app/store/cartStore';
@@ -16,6 +19,7 @@ import { useLikeStore } from '@/app/store/likeStore';
 import type { CatalogProduct } from '@/app/types';
 
 const SUGGESTION_DEBOUNCE_MS = 200;
+const NAV_CATEGORIES = ['Beauty', 'Fitness', 'Apparel', 'Kitchen', 'Home', 'Electronics'];
 
 interface NavbarProps {
   onSearch?: (query: string) => void;
@@ -34,6 +38,10 @@ export default function Navbar({ onSearch }: NavbarProps) {
   const [suggestions, setSuggestions] = useState<CatalogProduct[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [searchCategory, setSearchCategory] = useState('');
+  const [showMegaMenu, setShowMegaMenu] = useState(false);
+  const [showDrawer, setShowDrawer] = useState(false);
+  const megaRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -46,9 +54,12 @@ export default function Navbar({ onSearch }: NavbarProps) {
 
   const goToSearchResults = (query: string) => {
     const trimmed = query.trim();
-    if (!trimmed) return;
+    if (!trimmed && !searchCategory) return;
     setShowSuggestions(false);
-    router.push(`/?q=${encodeURIComponent(trimmed)}`);
+    const params = new URLSearchParams();
+    if (trimmed) params.set('q', trimmed);
+    if (searchCategory) params.set('category', searchCategory);
+    router.push(`/?${params.toString()}`);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -94,10 +105,32 @@ export default function Navbar({ onSearch }: NavbarProps) {
       ) {
         setShowSuggestions(false);
       }
+      if (megaRef.current && !megaRef.current.contains(e.target as Node)) {
+        setShowMegaMenu(false);
+      }
+    }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setShowMegaMenu(false);
+        setShowDrawer(false);
+      }
     }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!showDrawer) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [showDrawer]);
 
   const handleLogout = () => {
     setShowProfile(false);
@@ -110,9 +143,19 @@ export default function Navbar({ onSearch }: NavbarProps) {
   };
 
   return (
-    <nav className={`sticky top-4 z-50 mx-4 px-6 py-3.5 ${GLASS_STYLES.container}`}>
+    <nav className={`sticky top-4 z-50 mx-4 px-4 py-3.5 sm:px-6 ${GLASS_STYLES.container}`}>
       <div className="mx-auto max-w-7xl">
-        <div className="flex items-center justify-between gap-8">
+        <div className="flex items-center justify-between gap-3 md:gap-8">
+
+          {/* Mobile menu button */}
+          <button
+            type="button"
+            onClick={() => setShowDrawer(true)}
+            aria-label="Open menu"
+            className="-ml-2 flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-neutral-700 hover:bg-white/50 lg:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
 
           {/* Logo Section */}
           <Link href="/" className="flex items-center gap-2 group">
@@ -125,20 +168,43 @@ export default function Navbar({ onSearch }: NavbarProps) {
           </Link>
 
           {/* Search Bar Section */}
-          <div className="flex-1 max-w-md relative" ref={searchRef}>
+          <div className="relative hidden max-w-xl flex-1 sm:block" ref={searchRef}>
             <label htmlFor="navbar-search" className="sr-only">
               Search products
             </label>
-            <form onSubmit={handleSearchSubmit} className="relative flex items-center">
+            <form
+              onSubmit={handleSearchSubmit}
+              className="relative flex items-center rounded-full border border-zinc-200 bg-white/40 backdrop-blur-sm transition-all focus-within:border-neutral-300 focus-within:bg-white/60"
+            >
+              <div className="relative hidden shrink-0 md:block">
+                <label htmlFor="navbar-category" className="sr-only">
+                  Search category
+                </label>
+                <select
+                  id="navbar-category"
+                  value={searchCategory}
+                  onChange={(e) => setSearchCategory(e.target.value)}
+                  className="max-w-[9.5rem] cursor-pointer appearance-none rounded-l-full bg-transparent py-2.5 pl-5 pr-8 text-xs font-bold uppercase tracking-wider text-neutral-600 outline-none"
+                >
+                  <option value="">All</option>
+                  {ALL_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
+              </div>
+              <span className="hidden h-5 w-px bg-zinc-200 md:block" aria-hidden="true" />
               <input
                 id="navbar-search"
                 type="text"
                 value={searchQuery}
                 onChange={handleSearch}
                 onFocus={() => setShowSuggestions(true)}
-                placeholder="Search products..."
+                placeholder="Search products, brands and stores..."
                 autoComplete="off"
-                className="w-full rounded-full border border-zinc-200 bg-white/40 py-2.5 pl-5 pr-12 text-sm text-neutral-800 placeholder-neutral-500 outline-none backdrop-blur-sm transition-all focus:bg-white/60 focus:border-neutral-300"
+                className="w-full min-w-0 bg-transparent py-2.5 pl-4 pr-12 text-sm text-neutral-800 placeholder-neutral-500 outline-none"
               />
               <button
                 type="submit"
@@ -274,7 +340,166 @@ export default function Navbar({ onSearch }: NavbarProps) {
 
           </div>
         </div>
+
+        {/* Mobile search */}
+        <form onSubmit={handleSearchSubmit} className="relative mt-3 sm:hidden">
+          <label htmlFor="navbar-search-mobile" className="sr-only">
+            Search products
+          </label>
+          <input
+            id="navbar-search-mobile"
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search products..."
+            autoComplete="off"
+            className="w-full rounded-full border border-zinc-200 bg-white/40 py-2.5 pl-5 pr-12 text-sm text-neutral-800 placeholder-neutral-500 outline-none backdrop-blur-sm focus:border-neutral-300 focus:bg-white/60"
+          />
+          <button
+            type="submit"
+            aria-label="Search"
+            className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-neutral-900 text-white"
+          >
+            <MagnifyingGlassIcon className="h-4 w-4" />
+          </button>
+        </form>
+
+        {/* Category navigation (desktop) */}
+        <div ref={megaRef} className="relative mt-3 hidden border-t border-white/40 pt-2.5 lg:block">
+          <ul className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-neutral-600">
+            <li>
+              <button
+                type="button"
+                onClick={() => setShowMegaMenu((prev) => !prev)}
+                aria-expanded={showMegaMenu}
+                aria-haspopup="true"
+                className="flex cursor-pointer items-center gap-1.5 rounded-full bg-neutral-900 px-4 py-2 text-white shadow-sm transition-colors hover:bg-neutral-800"
+              >
+                <Menu className="h-3.5 w-3.5" />
+                All Categories
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showMegaMenu ? 'rotate-180' : ''}`} />
+              </button>
+            </li>
+            {NAV_CATEGORIES.map((category) => (
+              <li key={category}>
+                <Link
+                  href={categoryHref(category)}
+                  className="block rounded-full px-3.5 py-2 transition-colors hover:bg-white/60 hover:text-black"
+                >
+                  {category}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link href="/?view=deals" className="block rounded-full px-3.5 py-2 text-red-500 transition-colors hover:bg-red-50/60">
+                Deals
+              </Link>
+            </li>
+            <li className="ml-auto">
+              <Link
+                href="/vendor/signup"
+                className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-neutral-900 transition-colors hover:bg-white/60"
+              >
+                <Store className="h-3.5 w-3.5" />
+                Sell on bazaar.
+              </Link>
+            </li>
+          </ul>
+
+          {showMegaMenu && (
+            <div className="absolute left-0 right-0 top-full z-50 mt-3 rounded-3xl border border-white/40 bg-white p-6 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="grid grid-cols-4 gap-8">
+                {CATEGORY_GROUPS.map((group) => (
+                  <div key={group.title}>
+                    <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-400">{group.title}</p>
+                    <ul className="space-y-1">
+                      {group.items.map((item) => (
+                        <li key={item}>
+                          <Link
+                            href={categoryHref(item)}
+                            onClick={() => setShowMegaMenu(false)}
+                            className="block rounded-xl px-3 py-2 text-sm font-medium normal-case tracking-normal text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-black"
+                          >
+                            {item}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 flex items-center justify-between border-t border-neutral-100 pt-4 text-xs normal-case">
+                <Link href="/" onClick={() => setShowMegaMenu(false)} className="font-semibold text-neutral-700 hover:underline">
+                  Browse everything
+                </Link>
+                <Link href="/?view=deals" onClick={() => setShowMegaMenu(false)} className="font-semibold text-red-500 hover:underline">
+                  Shop today&rsquo;s deals
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Mobile drawer */}
+      {showDrawer && createPortal(
+        <div className="fixed inset-0 z-[80] lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+          <div className="absolute inset-0 bg-neutral-950/40 backdrop-blur-sm" onClick={() => setShowDrawer(false)} />
+          <div className="absolute inset-y-0 left-0 flex w-80 max-w-[85%] flex-col overflow-y-auto bg-white p-5 shadow-2xl animate-in slide-in-from-left duration-200">
+            <div className="mb-5 flex items-center justify-between">
+              <span className="text-xl font-bold tracking-tight text-neutral-800">bazaar.</span>
+              <button
+                type="button"
+                onClick={() => setShowDrawer(false)}
+                aria-label="Close menu"
+                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <Link
+              href="/?view=deals"
+              onClick={() => setShowDrawer(false)}
+              className="mb-4 block rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold uppercase tracking-wider text-red-500"
+            >
+              Today&rsquo;s deals
+            </Link>
+
+            {CATEGORY_GROUPS.map((group) => (
+              <div key={group.title} className="mb-4">
+                <p className="mb-1 px-1 text-[10px] font-bold uppercase tracking-[0.15em] text-neutral-400">{group.title}</p>
+                {group.items.map((item) => (
+                  <Link
+                    key={item}
+                    href={categoryHref(item)}
+                    onClick={() => setShowDrawer(false)}
+                    className="block rounded-xl px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
+                  >
+                    {item}
+                  </Link>
+                ))}
+              </div>
+            ))}
+
+            <div className="mt-auto space-y-1 border-t border-neutral-100 pt-4 text-sm font-medium text-neutral-700">
+              <Link href="/vendor/signup" onClick={() => setShowDrawer(false)} className="flex items-center gap-2 rounded-xl px-3 py-2 hover:bg-neutral-100">
+                <Store className="h-4 w-4" /> Sell on bazaar.
+              </Link>
+              <Link href="/likes" onClick={() => setShowDrawer(false)} className="block rounded-xl px-3 py-2 hover:bg-neutral-100">
+                Wishlist
+              </Link>
+              <Link href="/orders" onClick={() => setShowDrawer(false)} className="block rounded-xl px-3 py-2 hover:bg-neutral-100">
+                Order history
+              </Link>
+              <Link href="/#help" onClick={() => setShowDrawer(false)} className="block rounded-xl px-3 py-2 hover:bg-neutral-100">
+                Help
+              </Link>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
     </nav>
   );
 }

@@ -7,6 +7,8 @@ import com.bazaar.backend.dto.product.ProductResponse;
 import com.bazaar.backend.entity.Product;
 import com.bazaar.backend.entity.ProductStatus;
 import com.bazaar.backend.exception.ProductNotFoundException;
+import com.bazaar.backend.repository.OrderItemRepository;
+import com.bazaar.backend.repository.OrderItemRepository.ProductSales;
 import com.bazaar.backend.repository.ProductRepository;
 import com.bazaar.backend.repository.ProductReviewRepository;
 import com.bazaar.backend.repository.ProductReviewRepository.ProductRatingSummary;
@@ -31,17 +33,20 @@ public class ProductService {
     private final UserRepository userRepository;
     private final ProductSearchService productSearchService;
     private final ProductReviewRepository productReviewRepository;
+    private final OrderItemRepository orderItemRepository;
 
     public ProductService(
             ProductRepository productRepository,
             UserRepository userRepository,
             ProductSearchService productSearchService,
-            ProductReviewRepository productReviewRepository
+            ProductReviewRepository productReviewRepository,
+            OrderItemRepository orderItemRepository
     ) {
         this.productRepository = productRepository;
         this.userRepository = userRepository;
         this.productSearchService = productSearchService;
         this.productReviewRepository = productReviewRepository;
+        this.orderItemRepository = orderItemRepository;
     }
 
     @Transactional(readOnly = true)
@@ -56,6 +61,8 @@ public class ProductService {
     public List<CatalogProductResponse> listActive() {
         List<Product> products = productRepository.findAllByStatusOrderByCreatedAtDesc(ProductStatus.ACTIVE);
         Map<UUID, ProductRatingSummary> ratings = ratingSummariesByProductId(products.stream().map(Product::getId).toList());
+        Map<UUID, Long> unitsSold = orderItemRepository.findUnitsSoldPerProduct().stream()
+                .collect(Collectors.toMap(ProductSales::getProductId, ProductSales::getUnitsSold));
 
         return products.stream()
                 .map(product -> {
@@ -63,7 +70,8 @@ public class ProductService {
                     return CatalogProductResponse.from(
                             product,
                             summary == null ? null : summary.getAverageRating(),
-                            summary == null ? null : summary.getReviewCount()
+                            summary == null ? null : summary.getReviewCount(),
+                            unitsSold.get(product.getId())
                     );
                 })
                 .toList();

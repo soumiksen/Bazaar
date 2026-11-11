@@ -20,9 +20,16 @@ export interface CatalogProduct {
   title: string;
   category: string;
   price: number;
+  /** Original price before a discount; present only when the product is on sale. */
+  compareAtPrice?: number | null;
   imageUrl: string | null;
   averageRating: number;
   reviewCount: number;
+  vendorId?: string | null;
+  vendorName?: string | null;
+  vendorVerified?: boolean;
+  createdAt?: string | null;
+  unitsSold?: number;
 }
 
 export interface ProductDetail {

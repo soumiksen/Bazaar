@@ -47,6 +47,9 @@ public class Product {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
+    @Column(name = "compare_at_price", precision = 10, scale = 2)
+    private BigDecimal compareAtPrice;
+
     @Column(nullable = false)
     private int stock;
 

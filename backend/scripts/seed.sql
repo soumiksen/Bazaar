@@ -118,3 +118,16 @@ FROM (VALUES
 ) AS p(vendor_email, title, category, price, stock, photo, description)
 JOIN users u ON LOWER(u.email) = LOWER(p.vendor_email)
 WHERE NOT EXISTS (SELECT 1 FROM products x WHERE x.vendor_id = u.id AND x.title = p.title);
+
+-- ---- Merchandising data (requires migration V9) ----
+-- Spread creation dates over the last 90 days so "New" badges and the New Arrivals tab are meaningful.
+UPDATE products p SET created_at = now() - make_interval(days => abs(hashtext(p.title)) % 90)
+FROM users u WHERE u.id = p.vendor_id AND u.email LIKE '%@bazaar.test';
+
+-- Put roughly a quarter of the seeded products on sale (15-33% off) by setting an original price.
+UPDATE products p SET compare_at_price = ceil(p.price * (1.18 + (abs(hashtext(p.title)) % 16) / 100.0))
+FROM users u WHERE u.id = p.vendor_id AND u.email LIKE '%@bazaar.test'
+  AND abs(hashtext(p.title)) % 4 = 0;
+
+-- Mark most seeded vendors as verified (Glow Beauty stays unverified so both states are visible).
+UPDATE users SET verified = TRUE WHERE email LIKE '%@bazaar.test' AND email <> 'glow@bazaar.test';
