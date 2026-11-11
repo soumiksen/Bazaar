@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShoppingBagIcon, StarIcon, ArrowLeftIcon, CheckIcon } from '@heroicons/react/24/solid';
+import { ShoppingBagIcon, StarIcon, ArrowLeftIcon, PlusIcon, MinusIcon } from '@heroicons/react/24/solid';
 import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { GLASS_STYLES } from '@/app/constants';
@@ -10,7 +10,7 @@ import ReviewCard from '@/app/components/ReviewCard';
 import { useAuthStore, selectIsAuthenticated } from '@/app/store/authStore';
 import { useCartStore } from '@/app/store/cartStore';
 import { useLikeStore } from '@/app/store/likeStore';
-import { addCartItem, likeProduct, unlikeProduct, createReview, updateReview, deleteReview, ApiError } from '@/app/lib/api';
+import { addCartItem, updateCartItemQuantity, removeCartItem, likeProduct, unlikeProduct, createReview, updateReview, deleteReview, ApiError } from '@/app/lib/api';
 import type { ProductDetail, ProductReviews } from '@/app/types';
 
 const FALLBACK_IMAGE_URL =
@@ -45,28 +45,35 @@ export default function ProductDetailView({ product, reviews: initialReviews }: 
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState<string | null>(null);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [justAdded, setJustAdded] = useState(false);
+  const cartItem = useCartStore((state) => state.items.find((item) => item.productId === product.id));
+  const quantity = cartItem?.quantity ?? 0;
   const [cartError, setCartError] = useState<string | null>(null);
   const [isTogglingLike, setIsTogglingLike] = useState(false);
 
   const myReview = reviewsData.items.find((review) => review.userId === currentUserId) ?? null;
 
-  const handleAddToCart = async () => {
+  const changeQuantity = async (delta: number) => {
     if (!isLoggedIn) {
       router.push('/signin');
       return;
     }
 
+    if (isAddingToCart) return;
     setIsAddingToCart(true);
     setCartError(null);
 
     try {
-      const cart = await addCartItem(product.id, 1);
+      let cart;
+      if (!cartItem) {
+        cart = await addCartItem(product.id, 1);
+      } else if (quantity + delta <= 0) {
+        cart = await removeCartItem(cartItem.id);
+      } else {
+        cart = await updateCartItemQuantity(cartItem.id, quantity + delta);
+      }
       setCart(cart);
-      setJustAdded(true);
-      setTimeout(() => setJustAdded(false), 2000);
     } catch (error) {
-      setCartError(error instanceof ApiError ? error.message : 'Could not add to cart. Please try again.');
+      setCartError(error instanceof ApiError ? error.message : 'Could not update your bag. Please try again.');
     } finally {
       setIsAddingToCart(false);
     }
@@ -229,24 +236,41 @@ export default function ProductDetailView({ product, reviews: initialReviews }: 
               </div>
 
               <div className="flex flex-col items-end gap-2">
-                <button
-                  type="button"
-                  onClick={handleAddToCart}
-                  disabled={product.stock === 0 || isAddingToCart}
-                  className="flex items-center gap-2 rounded-full bg-neutral-950 px-6 py-3.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:bg-neutral-800 hover:scale-[1.02] active:scale-95 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
-                >
-                  {justAdded ? (
-                    <>
-                      <CheckIcon className="h-4 w-4" />
-                      <span>Added to Bag</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingBagIcon className="h-4 w-4" />
-                      <span>{isAddingToCart ? 'Adding...' : 'Add to Shopping Bag'}</span>
-                    </>
-                  )}
-                </button>
+                {quantity > 0 ? (
+                  <div className="flex items-center gap-2 rounded-full bg-neutral-950 p-1.5 text-white shadow-xl">
+                    <button
+                      type="button"
+                      onClick={() => changeQuantity(-1)}
+                      disabled={isAddingToCart}
+                      aria-label="Decrease quantity"
+                      className="flex h-9 w-9 items-center justify-center rounded-full transition-all hover:bg-white/20 active:scale-90 cursor-pointer disabled:opacity-60"
+                    >
+                      <MinusIcon className="h-4 w-4" />
+                    </button>
+                    <span className="min-w-8 text-center text-sm font-bold tabular-nums" aria-live="polite">
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => changeQuantity(1)}
+                      disabled={isAddingToCart || quantity >= product.stock}
+                      aria-label="Increase quantity"
+                      className="flex h-9 w-9 items-center justify-center rounded-full transition-all hover:bg-white/20 active:scale-90 cursor-pointer disabled:opacity-40"
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => changeQuantity(1)}
+                    disabled={product.stock === 0 || isAddingToCart}
+                    className="flex items-center gap-2 rounded-full bg-neutral-950 px-6 py-3.5 text-sm font-bold text-white shadow-xl transition-all duration-300 hover:bg-neutral-800 hover:scale-[1.02] active:scale-95 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
+                  >
+                    <ShoppingBagIcon className="h-4 w-4" />
+                    <span>{isAddingToCart ? 'Adding...' : 'Add to Shopping Bag'}</span>
+                  </button>
+                )}
                 {cartError && <span className="text-xs font-medium text-red-500">{cartError}</span>}
               </div>
             </div>

@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShoppingBagIcon, StarIcon } from '@heroicons/react/24/solid';
+import { ShoppingBagIcon, StarIcon, PlusIcon, MinusIcon } from '@heroicons/react/24/solid';
 import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline';
 import { GLASS_STYLES } from '../constants';
-import { likeProduct, unlikeProduct } from '@/app/lib/api';
+import { addCartItem, updateCartItemQuantity, removeCartItem, likeProduct, unlikeProduct } from '@/app/lib/api';
 import { useAuthStore, selectIsAuthenticated } from '@/app/store/authStore';
 import { useLikeStore } from '@/app/store/likeStore';
+import { useCartStore } from '@/app/store/cartStore';
 
 interface ProductCardProps {
   id: string;
@@ -36,7 +37,11 @@ export default function ProductCard({
   const isFavorite = useLikeStore((state) => state.likedProductIds.has(id));
   const setLikes = useLikeStore((state) => state.setLikes);
   const [isTogglingLike, setIsTogglingLike] = useState(false);
+  const setCart = useCartStore((state) => state.setCart);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const cartItem = useCartStore((state) => state.items.find((item) => item.productId === id));
+  const quantity = cartItem?.quantity ?? 0;
 
   const handleToggleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -57,6 +62,36 @@ export default function ProductCard({
       // silently ignore; the heart simply won't reflect the toggle
     } finally {
       setIsTogglingLike(false);
+    }
+  };
+
+  const changeQuantity = async (e: React.MouseEvent, delta: number) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!isLoggedIn) {
+      router.push('/signin');
+      return;
+    }
+
+    if (isAdding) return;
+    setIsAdding(true);
+
+    try {
+      let cart;
+      if (!cartItem) {
+        cart = await addCartItem(id, 1);
+      } else if (quantity + delta <= 0) {
+        cart = await removeCartItem(cartItem.id);
+      } else {
+        cart = await updateCartItemQuantity(cartItem.id, quantity + delta);
+      }
+      setCart(cart);
+      if (delta > 0) onAddToCart?.(id);
+    } catch {
+      // silently ignore; the quantity simply won't change
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -127,14 +162,44 @@ export default function ProductCard({
               <span className="text-lg font-bold tracking-tight text-neutral-900">{price}</span>
             </div>
 
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onAddToCart?.(id); }}
-              aria-label={`Add ${title} to cart`}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-950 text-white shadow-md transition-all duration-300 hover:bg-neutral-800 hover:scale-105 active:scale-95 cursor-pointer group-hover:shadow-neutral-950/20"
-            >
-              <ShoppingBagIcon className="h-4 w-4" />
-            </button>
+            {quantity > 0 ? (
+              <div
+                className="flex h-10 items-center gap-1 rounded-full bg-neutral-950 px-1 text-white shadow-md"
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
+              >
+                <button
+                  type="button"
+                  onClick={(e) => changeQuantity(e, -1)}
+                  disabled={isAdding}
+                  aria-label={`Decrease quantity of ${title}`}
+                  className="flex h-8 w-8 items-center justify-center rounded-full transition-all hover:bg-white/20 active:scale-90 cursor-pointer disabled:opacity-60"
+                >
+                  <MinusIcon className="h-4 w-4" />
+                </button>
+                <span className="min-w-5 text-center text-sm font-semibold tabular-nums" aria-live="polite">
+                  {quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => changeQuantity(e, 1)}
+                  disabled={isAdding || (cartItem ? quantity >= cartItem.stock : false)}
+                  aria-label={`Increase quantity of ${title}`}
+                  className="flex h-8 w-8 items-center justify-center rounded-full transition-all hover:bg-white/20 active:scale-90 cursor-pointer disabled:opacity-40"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => changeQuantity(e, 1)}
+                disabled={isAdding}
+                aria-label={`Add ${title} to cart`}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-950 text-white shadow-md transition-all duration-300 hover:bg-neutral-800 hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-60 group-hover:shadow-neutral-950/20"
+              >
+                <ShoppingBagIcon className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
       </article>
